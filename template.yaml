@@ -1,0 +1,67 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sam-sqs
+
+  Sample SAM Template for sam-sqs
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  SqsQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: my-sqs-queue
+  ProducerFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: src/producer/
+      Handler: index.lambdaHandler
+      Layers:
+        - !Ref DependencyLayer
+      Runtime: nodejs18.x
+      Architectures:
+        - arm64
+      Events:
+        Producer:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /produce
+            Method: GET
+      Policies:
+        - AmazonSQSFullAccess
+      Environment:
+        Variables:
+          QUEUE_URL: !Ref SqsQueue
+  ConsumerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/producer/
+      Handler: index.lambdaHandler
+      Layers:
+        - !Ref DependencyLayer
+      Runtime: nodejs18.x
+      Architectures:
+        - arm64
+      Environment:
+        Variables:
+          QUEUE_URL: !Ref SqsQueue
+      Events:
+        Consumer:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt SqsQueue.Arn
+      Policies:
+        - AmazonSQSFullAccess
+
+  DependencyLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: app-dependency
+      ContentUri: dependencies/
+      CompatibleRuntimes:
+        - nodejs18.x
+      RetentionPolicy: Retain

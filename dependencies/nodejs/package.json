@@ -1,0 +1,8 @@
+{
+    "name": "producer",
+    "version": "1.0.0",
+    "dependencies": {
+        "aws-sdk": "^2.1309.0",
+        "lodash": "^4.17.21"
+    }
+}
